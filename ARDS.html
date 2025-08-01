@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSCE: Pneumonia with ARDS & ECMO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-color: #007AFF;
+            --background-color: #f5f5f7;
+            --card-background: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border-color: #d2d2d7;
+            --transition-slow: 600ms cubic-bezier(0.16, 1, 0.3, 1);
+            --transition-fast: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- Tiled Watermark Style --- */
+        #watermark-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none; /* Allows clicking through the overlay */
+            z-index: 9999; /* Ensures it's on top of all other content */
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .fade-in { animation: fadeIn var(--transition-slow) forwards; }
+        .fade-in-up { animation: fadeInUp var(--transition-slow) forwards; }
+        .slide-in-right { animation: slideInRight var(--transition-slow) forwards; }
+
+        /* --- Component Styles --- */
+        .atelier-button {
+            background-color: var(--brand-color);
+            color: white;
+            font-weight: 600;
+            padding: 14px 28px;
+            border-radius: 9999px;
+            transition: all var(--transition-fast);
+            transform: scale(1);
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.2);
+        }
+        .atelier-button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3);
+        }
+        .atelier-button-secondary {
+            background-color: #e9e9eb;
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+        .atelier-button-secondary:hover {
+            background-color: #dcdce0;
+            box-shadow: none;
+        }
+
+        .answer-reveal {
+            transition: all var(--transition-slow);
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+        .answer-reveal.show {
+            max-height: 3000px; /* Increased for longer educational content */
+            opacity: 1;
+            margin-top: 1.5rem;
+        }
+
+        .checkable-item {
+            cursor: pointer;
+            transition: background-color var(--transition-fast), border-color var(--transition-fast);
+            border: 1px solid var(--border-color);
+        }
+        .checkable-item .check-icon {
+            color: var(--border-color);
+            transition: all var(--transition-fast);
+            transform: scale(0.8);
+        }
+        .checkable-item.correct {
+            background-color: #f0f9ff;
+            border-color: var(--brand-color);
+        }
+        .checkable-item.correct .check-icon {
+            color: var(--brand-color);
+            transform: scale(1);
+        }
+        
+        .progress-bar-container {
+            background-color: #e9e9eb;
+            border-radius: 9999px;
+            overflow: hidden;
+            height: 8px;
+        }
+        .progress-bar-fill {
+            background-color: var(--brand-color);
+            height: 100%;
+            transition: width var(--transition-slow);
+        }
+        .disabled-card {
+            transition: opacity var(--transition-slow);
+        }
+        .disabled-card.is-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .educational-point {
+            background-color: #f0f9ff; /* Light blue background */
+            border-left: 4px solid var(--brand-color);
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f5f5f7;
+            font-weight: 600;
+        }
+        .data-table td span {
+            font-family: monospace;
+            font-size: 1.1em;
+            background-color: #e9e9eb;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Watermark Overlay Element -->
+    <div id="watermark-overlay"></div>
+
+    <div id="app-container" class="w-full max-w-7xl mx-auto">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="min-h-screen flex flex-col items-center justify-center text-center p-4 fade-in">
+            <h1 class="text-5xl md:text-7xl font-bold text-gray-800 mb-4">OSCE: Pneumonia with ARDS (Advanced)</h1>
+            <p class="text-xl md:text-2xl text-gray-500 mb-10 max-w-2xl">An interactive EDIC Part 2 simulation on managing severe pneumonia progressing to ARDS and its complications.</p>
+            <button id="start-btn" class="atelier-button text-xl">Start Case</button>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 lg:gap-12">
+                <!-- Left Column: Questions & Content -->
+                <div class="lg:col-span-2">
+                    <div id="vignette-section" class="bg-white p-8 rounded-3xl shadow-sm mb-8 fade-in-up">
+                        <h3 class="text-2xl font-bold mb-4 border-b pb-3 text-gray-800">Initial Presentation</h3>
+                        <div class="space-y-4 text-lg leading-relaxed text-gray-600">
+                            <p>A 56-year-old man with a history of Type 2 Diabetes and Hypertension presents to the emergency department with a 3-day history of fever, productive cough, and increasing shortness of breath. He appears confused and is peripherally cool.</p>
+                            <div class="bg-red-50 text-red-800 p-4 rounded-2xl border border-red-200">
+                                <p><strong class="font-semibold">Initial Vitals:</strong> HR 125 bpm, BP 85/50 mmHg (MAP 60), RR 32/min, Temp 39.4°C, SpO2 89% on a 15L non-rebreather mask.</p>
+                            </div>
+                            <div class="mt-6">
+                                <h4 class="text-xl font-bold text-gray-800 mb-2">Initial Laboratory Results</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr><th>Parameter</th><th>Value</th><th>Normal Range</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td>WBC</td><td><span>22.5 x10⁹/L</span></td><td>4.0-11.0</td></tr>
+                                            <tr><td>Neutrophils</td><td><span>19.8 x10⁹/L</span></td><td>2.0-7.5</td></tr>
+                                            <tr><td>Sodium</td><td><span>129 mmol/L</span></td><td>135-145</td></tr>
+                                            <tr><td>Chloride</td><td><span>90 mmol/L</span></td><td>98-107</td></tr>
+                                            <tr><td>Urea</td><td><span>10.2 mmol/L</span></td><td>2.5-7.8</td></tr>
+                                            <tr><td>Creatinine</td><td><span>140 µmol/L</span></td><td>60-120</td></tr>
+                                            <tr><td>CRP</td><td><span>350 mg/L</span></td><td>&lt;5</td></tr>
+                                            <tr><td>Lactate</td><td><span>4.5 mmol/L</span></td><td>&lt;2.0</td></tr>
+                                            <tr><td>pH</td><td><span>7.32</span></td><td>7.35-7.45</td></tr>
+                                            <tr><td>PaCO2</td><td><span>30 mmHg</span></td><td>35-45</td></tr>
+                                            <tr><td>PaO2</td><td><span>65 mmHg</span></td><td>80-100</td></tr>
+                                            <tr><td>HCO3</td><td><span>16 mmol/L</span></td><td>22-26</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="questions-container">
+                        <!-- Questions will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Right Column: Status Panel -->
+                <div class="lg:col-span-1 lg:sticky top-8 h-fit">
+                    <div id="status-panel" class="bg-white p-8 rounded-3xl shadow-sm slide-in-right">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Case Status</h2>
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-medium text-gray-500">Time</span>
+                                <span id="timer" class="text-2xl font-semibold text-gray-800 tabular-nums">00:00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-medium text-gray-500">Score</span>
+                                <span id="score" class="text-2xl font-semibold text-gray-800 tabular-nums">0 / 0</span>
+                            </div>
+                        </div>
+                        <div class="mt-8">
+                            <h3 class="text-lg font-medium text-gray-500 mb-3">Progress</h3>
+                            <div class="progress-bar-container">
+                                <div id="progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="hidden min-h-screen flex flex-col items-center justify-center text-center p-4 fade-in">
+            <h1 class="text-5xl md:text-7xl font-bold text-gray-800 mb-4">Case Completed</h1>
+            <p class="text-xl md:text-2xl text-gray-500 mb-10">Here is your performance summary.</p>
+            <div class="bg-white p-8 rounded-3xl shadow-sm w-full max-w-3xl mb-10 text-left">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-2xl mb-8">
+                    <p>Final Score: <span id="final-score" class="font-bold text-blue-600"></span></p>
+                    <p>Total Time: <span id="total-time" class="font-bold text-blue-600"></span></p>
+                </div>
+                <div id="feedback-container" class="border-t pt-6">
+                    <!-- Feedback will be injected here -->
+                </div>
+            </div>
+            <button id="restart-btn" class="atelier-button text-xl">Restart Case</button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DATA ---
+        const caseData = [
+            {
+                question: "You are asked to review the patient in the emergency department. Summarize the key positive findings from the clinical presentation and initial investigations.",
+                answer: [
+                    { text: "<strong>Clinical Presentation:</strong> This is a 56-year-old male presenting with a clinical picture of <strong>septic shock</strong>. Key features are hypotension, tachycardia, tachypnea, fever, and altered mental status (confusion).", points: 3 },
+                    { text: "<strong>Source of Sepsis:</strong> The history of cough and fever strongly suggests the source is <strong>community-acquired pneumonia</strong>.", points: 2 },
+                    { text: "<strong>Laboratory Findings (Inflammation & Shock):</strong> Labs confirm a severe inflammatory response (high WBC, CRP) and shock (elevated lactate of 4.5 mmol/L).", points: 2 },
+                    { text: "<strong>Laboratory Findings (Organ Dysfunction):</strong> There is evidence of multi-organ dysfunction with Acute Kidney Injury (high Urea/Creatinine) and severe hypoxemic respiratory failure.", points: 2 },
+                    { text: "<strong>Acid-Base Status:</strong> The patient has a high anion gap metabolic acidosis (AG = 129 - (90 + 16) = 23) with respiratory compensation.", points: 2 }
+                ],
+                educational: "<strong>Educational Point: Anion Gap Calculation (Domain 1: Medical Expertise)</strong><br><br>The Anion Gap (AG) is a crucial calculation in metabolic acidosis. The formula is AG = Na⁺ - (Cl⁻ + HCO₃⁻). A normal AG is typically 8-12 mmol/L. In this case, the AG is 129 - (90 + 16) = 23. The elevated AG is primarily due to lactic acidosis from septic shock. Recognizing a high AG prompts a search for unmeasured anions (like lactate, ketones, or toxins)."
+            },
+            {
+                question: "You obtain an urgent portable chest X-ray. Describe the findings and then outline your immediate management priorities according to the Hour-1 Sepsis Bundle.",
+                images: [{ type: 'Initial Chest X-Ray', url: 'https://i.postimg.cc/zDgP1Lsr/image.png' }],
+                answer: [
+                    { text: "<strong>X-Ray Interpretation:</strong> The chest X-ray shows dense opacification consistent with consolidation in the right middle lobe.", points: 2 },
+                    { text: "<strong>Management 1 (Resuscitation):</strong> Immediately begin resuscitation with a 30 mL/kg crystalloid fluid bolus. Concurrently, start a Norepinephrine infusion to maintain a Mean Arterial Pressure (MAP) ≥ 65 mmHg.", points: 2 },
+                    { text: "<strong>Management 2 (Access):</strong> Secure definitive vascular access: an arterial line for continuous BP monitoring and a central venous catheter for resuscitation and vasopressor infusion.", points: 2 },
+                    { text: "<strong>Management 3 (Antibiotics):</strong> Administer broad-spectrum IV antibiotics (e.g., Ceftriaxone + Azithromycin) within one hour of recognition.", points: 2 },
+                    { text: "<strong>Management 4 (Cultures & Lactate):</strong> Ensure blood cultures were drawn and lactate level was measured as part of the initial workup.", points: 1 }
+                ],
+                educational: "<strong>Educational Point: Dual vs. Mono-therapy in CAP (Domain 1 & 3)</strong><br><br>For severe CAP requiring ICU admission, guidelines strongly recommend dual therapy (a beta-lactam PLUS either a macrolide or a respiratory fluoroquinolone) over monotherapy. The evidence, supported by multiple observational studies and meta-analyses, suggests this approach improves mortality. The rationale is twofold: 1) It ensures coverage of atypical pathogens (like <em>Legionella</em>) which can cause severe disease, and 2) Macrolides (e.g., Azithromycin) possess immunomodulatory properties that may dampen the excessive inflammatory response in severe pneumonia."
+            },
+            {
+                question: "How would you formally risk-stratify this patient's severity and determine the appropriate level of care?",
+                answer: [
+                    { text: "<strong>Tool:</strong> Mention a validated clinical prediction rule like the <strong>CURB-65 score</strong>. Other scores include the Pneumonia Severity Index (PSI) or the IDSA/ATS Major Criteria for severe CAP.", points: 1 },
+                    { text: "<strong>Calculation:</strong> The CURB-65 score is calculated as: C(1) + U(1) + R(1) + B(1) + Age<65(0) = <strong>Total Score of 4</strong>.", points: 1 },
+                    { text: "<strong>Interpretation:</strong> A score of 4, or the presence of septic shock (IDSA/ATS major criterion), indicates severe, life-threatening pneumonia. This mandates immediate ICU admission.", points: 1 }
+                ],
+                educational: "<strong>Educational Point: Scoring Systems in CAP (Domain 2: Decision Making)</strong><br><br>While CURB-65 is a simple mortality prediction tool, the <strong>IDSA/ATS criteria</strong> are specifically designed to determine the need for ICU admission. The presence of just one 'major' criterion (septic shock requiring vasopressors, or respiratory failure requiring mechanical ventilation) is sufficient to mandate ICU care. This patient meets the septic shock criterion."
+            },
+            {
+                question: "The patient's respiratory distress and hypoxemia persist despite initial fluid resuscitation. How would you manage this escalating respiratory failure?",
+                answer: [
+                    { text: "<strong>Option 1 (HFNC):</strong> High-Flow Nasal Cannula can be trialed cautiously to reduce work of breathing and improve oxygenation. However, its use is high-risk in a patient with shock and encephalopathy. Monitor failure closely with the <strong>ROX Index</strong>.", points: 2 },
+                    { text: "<strong>Option 2 (NIV):</strong> Non-Invasive Ventilation is generally discouraged in patients with shock and encephalopathy due to the high risk of aspiration and failure. The <strong>HACOR score</strong> can predict failure.", points: 2 },
+                    { text: "<strong>Option 3 (Intubation):</strong> Given the septic shock, altered mental status, and severe hypoxemia, <strong>early endotracheal intubation is the safest and most appropriate action</strong>. This secures the airway, reduces the metabolic cost of breathing, and allows for precise lung-protective ventilation.", points: 3 }
+                ],
+                educational: "<strong>Educational Point: Evidence for HFNC/NIV (Domain 1 & 4)</strong><br><br>The decision to use non-invasive support in severe respiratory failure is complex. The <strong>FLORALI trial</strong> showed that in patients with acute hypoxemic respiratory failure (without hypercapnia), HFNC was associated with lower mortality compared to standard oxygen or NIV. The <strong>ROX index (SpO2/FiO2 / RR)</strong> can help predict HFNC success (>4.88 is good). Conversely, NIV carries a high failure rate in de-novo respiratory failure, especially with shock or ARDS. The <strong>HACOR score</strong> (HR, Acidosis, Consciousness, Oxygenation, RR) can predict NIV failure (>5 suggests high risk). In this patient with shock and encephalopathy, the evidence supports moving directly to intubation."
+            },
+            {
+                question: "The patient is intubated. The post-intubation chest X-ray shows worsening bilateral opacities. Based on all available information, what is the diagnosis according to the Berlin Definition?",
+                images: [{ type: 'Post-Intubation Chest X-Ray (P/F Ratio: 106)', url: 'https://i.postimg.cc/Fz5pKZMQ/image.jpg' }],
+                answer: [
+                    { text: "<strong>Diagnosis:</strong> The patient meets the criteria for <strong>Moderate Acute Respiratory Distress Syndrome (ARDS)</strong>.", points: 2 },
+                    { text: "<strong>Timing:</strong> New/worsening symptoms within 1 week of a known insult (pneumonia).", points: 1 },
+                    { text: "<strong>Chest Imaging:</strong> Bilateral opacities are present, not fully explained by effusion or collapse.", points: 1 },
+                    { text: "<strong>Origin of Edema:</strong> Respiratory failure is not explained by cardiac failure or fluid overload (septic shock is the cause).", points: 1 },
+                    { text: "<strong>Oxygenation:</strong> The post-intubation PaO2 is 85 mmHg on FiO2 0.8. The PaO2/FiO2 ratio is 106, which falls into the 'Moderate' category (100-200 mmHg).", points: 2 }
+                ],
+                educational: "<strong>Educational Point: Defining ARDS (Domain 1: Medical Expertise)</strong><br><br>The Berlin Definition provides a standardized framework for diagnosing and stratifying ARDS. It is crucial for both clinical management and research. Accurately staging the severity (Mild, Moderate, Severe) is key because it guides therapies. For example, proning and neuromuscular blockade are typically reserved for severe ARDS (P/F ratio < 150 or < 100)."
+            },
+            {
+                question: "You are setting the ventilator for this patient with moderate ARDS. What are the key principles of a lung-protective ventilation strategy?",
+                answer: [
+                    { text: "<strong>Tidal Volume:</strong> Set a low tidal volume of <strong>6 mL/kg of predicted body weight</strong>, not actual weight.", points: 2 },
+                    { text: "<strong>Plateau Pressure:</strong> Keep the end-inspiratory plateau pressure (Pplat) <strong>below 30 cmH2O</strong> to minimize barotrauma.", points: 2 },
+                    { text: "<strong>Driving Pressure:</strong> Target a driving pressure (Pplat - PEEP) of <strong>less than 15 cmH2O</strong>, as this is strongly correlated with mortality.", points: 2 },
+                    { text: "<strong>Mechanical Power:</strong> Monitor and aim to minimize Mechanical Power, a composite measure of all forces causing VILI.", points: 2 }
+                ],
+                educational: "<strong>Educational Point: Minimizing VILI (Domain 1 & 4: Medical Expertise & Patient Safety)</strong><br><br>Ventilator-Induced Lung Injury (VILI) is a major cause of harm. Lung-protective ventilation aims to mitigate this. Low tidal volumes prevent volutrauma, limiting plateau pressure prevents barotrauma, and minimizing driving pressure reduces cyclical stress.<br><br><strong>Mechanical Power</strong> is an advanced concept that unifies these parameters into a single value representing the total energy delivered to the lungs per minute. The formula is complex, but it incorporates RR, TV, PEEP, and pressures. A higher mechanical power (>12 J/min) is associated with increased mortality. It reminds us that every parameter, including respiratory rate, contributes to VILI."
+            },
+            {
+                question: "Despite optimal ventilation, the patient's condition worsens. The PaO2/FiO2 ratio has dropped to 86. What are your next management steps for this severe, refractory hypoxemia?",
+                answer: [
+                    { text: "<strong>Prone Positioning:</strong> Immediately initiate prone positioning for at least 16 hours per day. This has a proven mortality benefit in severe ARDS (P/F < 150).", points: 3 },
+                    { text: "<strong>Neuromuscular Blockade:</strong> Start a continuous infusion of a neuromuscular blocking agent (e.g., cisatracurium) for up to 48 hours. This is strongly recommended for severe ARDS (P/F < 120) to improve patient-ventilator synchrony.", points: 2 },
+                    { text: "<strong>Fluid Management:</strong> Aggressively pursue a conservative or de-resuscitative fluid strategy to reduce pulmonary edema.", points: 1 },
+                    { text: "<strong>ECMO Referral:</strong> This patient now has severe ARDS and meets criteria for urgent referral to an ECMO center for consideration of Veno-Venous ECMO.", points: 2 }
+                ],
+                educational: "<strong>Educational Point: The Severe ARDS Ladder (Domain 2: Decision Making)</strong><br><br>With a P/F ratio < 100, the patient is now in severe ARDS, and mortality is very high. The management must escalate. The PROSEVA trial showed a clear mortality benefit for prone positioning in patients with a P/F ratio < 150. The ACURASYS trial supported the use of early neuromuscular blockade in severe ARDS. When these measures fail, VV-ECMO is the final rescue therapy, as shown in the EOLIA trial."
+            },
+            {
+                question: "During a recruitment maneuver, the patient suddenly becomes hypotensive (BP 70/40), tachycardic (HR 140), and the SpO2 drops to 80%. The high-pressure alarm on the ventilator sounds. What is the most likely diagnosis and your immediate action?",
+                images: [{ type: 'Post-Complication Chest X-Ray', url: 'https://i.postimg.cc/Dw7CL6sh/image.png' }],
+                answer: [
+                    { text: "<strong>Diagnosis:</strong> The clinical picture is classic for a <strong>right-sided tension pneumothorax</strong>, a life-threatening complication of positive pressure ventilation.", points: 3 },
+                    { text: "<strong>Immediate Action:</strong> Disconnect the patient from the ventilator and perform immediate needle decompression. The preferred site according to the latest ATLS guidelines is the <strong>5th intercostal space, just anterior to the mid-axillary line</strong>. The traditional 2nd intercostal space in the mid-clavicular line is an alternative.", points: 3 },
+                    { text: "<strong>Definitive Treatment:</strong> Following decompression, insert a large-bore chest tube (intercostal drain) to re-expand the lung and drain the air.", points: 2 }
+                ],
+                educational: "<strong>Educational Point: ATLS Update on Needle Decompression (Domain 1 & 4)</strong><br><br>The 10th edition of ATLS recommends moving the primary site for needle decompression from the 2nd intercostal space (ICS) to the <strong>5th ICS at the anterior axillary line</strong>. The rationale is based on evidence showing that chest wall thickness is less at this site compared to the anterior chest, leading to a higher success rate of the catheter actually entering the pleural space. While the 2nd ICS is still an alternative, stating the 5th ICS as the primary site reflects the most current, evidence-based guidelines."
+            },
+            {
+                question: "The chest tube is inserted. You notice persistent, vigorous bubbling in the chamber for three days. What is the diagnosis, and what is the primary goal of your ventilation strategy now?",
+                answer: [
+                    { text: "<strong>Diagnosis:</strong> A persistent air leak for >24-48 hours after chest tube placement is diagnostic of a <strong>Bronchopleural Fistula (BPF)</strong>.", points: 2 },
+                    { text: "<strong>Ventilation Goal:</strong> The primary goal is to minimize airflow across the fistula to promote healing.", points: 2 },
+                    { text: "<strong>Strategy 1:</strong> Use the <strong>lowest possible PEEP</strong> that provides adequate oxygenation without causing derecruitment.", points: 2 },
+                    { text: "<strong>Strategy 2:</strong> Use the <strong>lowest possible tidal volume</strong> and respiratory rate to reduce minute ventilation.", points: 1 },
+                    { text: "<strong>Strategy 3 (ECMO):</strong> If persistent hypoxemia is also present, consider <strong>Veno-Venous ECMO</strong> as a bridge to recovery. This allows for 'ultra-protective' or apneic ventilation, resting the lung to facilitate fistula healing.", points: 2 },
+                    { text: "<strong>Strategy 4 (Surgical):</strong> Involve thoracic surgery early for potential definitive management (e.g., endobronchial valves, surgical repair).", points: 1 }
+                ],
+                educational: "<strong>Educational Point: Chest Drains & BPF (Domain 1: Medical Expertise)</strong><br><br>The 3-bottle system is a classic illustration of the principles of chest drainage: collection, water seal, and suction control. However, modern practice has largely moved to more compact, single-unit <strong>'dry suction' digital drainage systems</strong>. These systems are generally considered safer and more effective as they provide precise, regulated suction levels independent of water columns and allow for objective, digital measurement of air leak volume. This quantification of the air leak is superior to subjective 'bubbling' for monitoring BPF resolution. Understanding the 3-bottle principle remains important, but advocating for a modern digital system is best practice."
+            },
+            {
+                question: "The BPF and refractory hypoxemia persist. The decision is made to proceed with VV-ECMO. What are the initial goals of management regarding blood flow, sweep gas, and anticoagulation?",
+                answer: [
+                    { text: "<strong>Blood Flow (Oxygenation):</strong> Set the initial blood flow to achieve adequate systemic oxygenation. A common starting point is <strong>60 mL/kg/min</strong>, aiming for a post-pump (patient) SpO2 > 88-90%. Flow is the primary determinant of oxygen delivery.", points: 3 },
+                    { text: "<strong>Sweep Gas Flow (CO2 Clearance):</strong> Adjust the sweep gas flow to control PaCO2. Start with a 1:1 ratio to blood flow (e.g., 4 L/min blood flow, 4 L/min sweep flow). Titrate the sweep to achieve a target PaCO2 that allows for 'rest' ventilator settings (e.g., PaCO2 40-45 mmHg).", points: 3 },
+                    { text: "<strong>Sweep Gas FiO2:</strong> Set the FiO2 on the gas blender to 1.0 (100%) initially to maximize oxygen transfer across the membrane.", points: 1 },
+                    { text: "<strong>Anticoagulation:</strong> Start a heparin infusion to prevent thrombosis in the circuit. The target is typically an <strong>aPTT of 60-80 seconds</strong> or an Anti-Xa level of 0.3-0.7 IU/mL, depending on institutional protocol.", points: 2 }
+                ],
+                educational: "<strong>Educational Point: The Physiology of VV-ECMO (Domain 1)</strong><br><br>Think of VV-ECMO as an external lung. The key is to separate the concepts of oxygenation and ventilation:<br><li><strong>Oxygenation</strong> is primarily determined by the <strong>ECMO blood flow rate</strong> and the FiO2 set on the blender. Higher flow = more oxygenated blood returned to the patient.</li><li><strong>CO2 Clearance (Ventilation)</strong> is determined by the <strong>sweep gas flow rate</strong>. Higher sweep flow = more CO2 washed out of the blood.</li>This separation allows you to place the native lungs on 'rest' settings (low tidal volumes, low pressures, low rate) to minimize VILI and promote healing."
+            },
+            {
+                question: "Now that the patient is established on VV-ECMO, what are the essential daily monitoring parameters you must check to ensure patient safety and optimal support?",
+                answer: [
+                    { text: "<strong>Patient Monitoring:</strong> Daily assessment of volume status, sedation, and signs of infection. Neurological checks are vital to detect intracranial hemorrhage.", points: 2 },
+                    { text: "<strong>Circuit Monitoring:</strong> Hourly checks of the circuit for kinks, clots, or air. Check cannula sites for bleeding or signs of infection.", points: 2 },
+                    { text: "<strong>Blood Gas Monitoring:</strong> At least daily pre- and post-oxygenator blood gases to assess membrane function. A significant drop in the post-oxygenator PaO2 indicates failure. Also monitor patient arterial blood gases to assess adequacy of support.", points: 3 },
+                    { text: "<strong>Anticoagulation Monitoring:</strong> Regular monitoring of aPTT or Anti-Xa (e.g., every 6 hours) to ensure therapeutic anticoagulation.", points: 2 },
+                    { text: "<strong>Hematological Monitoring:</strong> Daily full blood count to monitor for hemolysis (rising LDH, bilirubin; falling haptoglobin) and thrombocytopenia (common with heparin).", points: 1 }
+                ],
+                educational: "<strong>Educational Point: A Systematic Approach to the ECMO Patient (Domain 4: Patient Safety)</strong><br><br>Managing an ECMO patient requires a meticulous, systematic daily review. A useful mnemonic is <strong>'BEACH'</strong>: <strong>B</strong>lood gases (patient, pre/post membrane), <strong>E</strong>quipment (circuit check), <strong>A</strong>nticoagulation (labs), <strong>C</strong>annulation sites, <strong>H</strong>ematology (FBC, hemolysis labs). This structured approach ensures critical parameters are not missed."
+            },
+            {
+                question: "It is now Day 4 of the ECMO run. You are called to the bedside because the post-oxygenator blood gas PaO2 has dropped from 450 mmHg to 90 mmHg, and the blood in the post-membrane tubing appears darker than before. What is the likely diagnosis and your immediate actions?",
+                answer: [
+                    { text: "<strong>Diagnosis:</strong> Acute <strong>oxygenator failure</strong>, most likely due to thrombus formation within the membrane lung.", points: 3 },
+                    { text: "<strong>Action 1 (Call for Help):</strong> Immediately alert the on-call ECMO specialist and/or perfusionist. This is a circuit emergency.", points: 2 },
+                    { text: "<strong>Action 2 (Check Anticoagulation):</strong> Check the most recent anticoagulation status (ACT, aPTT, Anti-Xa) and ensure the heparin infusion is running correctly and at a therapeutic dose.", points: 2 },
+                    { text: "<strong>Action 3 (Increase FiO2):</strong> As a temporizing measure, increase the sweep gas FiO2 to 1.0 (100%) on the blender.", points: 1 },
+                    { text: "<strong>Action 4 (Prepare for Change-out):</strong> Prepare the team and equipment for an emergency oxygenator change-out. This is the definitive treatment.", points: 2 }
+                ],
+                educational: "<strong>Educational Point: ECMO Circuit Emergencies (Domain 4: Patient Safety)</strong><br><br>The ECMO circuit is a lifeline, and component failure is a critical event. The key signs of oxygenator failure are a falling post-membrane PaO2 (loss of gas exchange efficiency), a rising transmembrane pressure gradient (a sign of resistance from clot), and visible darkening of the post-membrane blood. The response must be rapid and coordinated. While troubleshooting (checking anticoagulation, increasing FiO2), the team must simultaneously prepare for the definitive solution: changing the failing component."
+            },
+            {
+                question: "The patient eventually recovers, is weaned from ECMO and the ventilator, and is extubated. Four hours later, the nurse calls you urgently. The patient is agitated, using accessory muscles, and has audible high-pitched inspiratory sounds. What is the diagnosis and your stepwise management?",
+                answer: [
+                    { text: "<strong>Diagnosis:</strong> The audible high-pitched inspiratory sound (stridor) indicates acute upper airway obstruction, most likely <strong>post-extubation stridor</strong> due to laryngeal edema.", points: 2 },
+                    { text: "<strong>Step 1 (Oxygen & Steroids):</strong> Administer high-flow oxygen and give an immediate dose of intravenous corticosteroids (e.g., Dexamethasone) to reduce inflammation.", points: 2 },
+                    { text: "<strong>Step 2 (Nebulizer):</strong> Administer <strong>nebulized epinephrine (adrenaline)</strong> for its vasoconstrictive effect to rapidly reduce mucosal swelling.", points: 2 },
+                    { text: "<strong>Step 3 (NIV):</strong> Consider a trial of NIV to provide positive pressure and reduce the work of breathing, which can help stent the airway open.", points: 1 },
+                    { text: "<strong>Step 4 (Re-intubation):</strong> If there is no rapid improvement, <strong>call for help immediately (including anesthesia/senior colleagues)</strong>. Proceed to re-intubation, anticipating a difficult airway. Ensure all advanced airway adjuncts (e.g., video laryngoscope, bougie, LMA, surgical airway kit) are at the bedside.", points: 2 }
+                ],
+                educational: "<strong>Educational Point: Difficult Airway Management (Domain 4 & 5)</strong><br><br>Post-extubation stridor is a medical emergency. The key is a rapid, stepwise response. While medical therapies are initiated, the team must simultaneously prepare for the worst-case scenario: re-intubation of a now-compromised airway. This requires a clear, pre-formulated difficult airway plan.<br><br><div class='overflow-x-auto'><table class='data-table'><thead><tr><th>Plan</th><th>Action</th><th>Goal</th></tr></thead><tbody><tr><td><strong>Plan A</strong></td><td>Direct Laryngoscopy / Video Laryngoscopy</td><td>First attempt at intubation</td></tr><tr><td><strong>Plan B</strong></td><td>Supraglottic Airway (e.g., LMA)</td><td>Rescue oxygenation if Plan A fails</td></tr><tr><td><strong>Plan C</strong></td><td>Face Mask Ventilation</td><td>Maintain oxygenation, call for help</td></tr><tr><td><strong>Plan D</strong></td><td>Surgical Airway (Cricothyroidotomy)</td><td>Final life-saving step if unable to intubate or ventilate</td></tr></tbody></table></div>"
+            }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const appContainer = document.getElementById('app-container');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const mainContent = document.getElementById('main-content');
+        const questionsContainer = document.getElementById('questions-container');
+        const resultsScreen = document.getElementById('results-screen');
+        const restartBtn = document.getElementById('restart-btn');
+        const timerEl = document.getElementById('timer');
+        const scoreEl = document.getElementById('score');
+        const progressBar = document.getElementById('progress-bar');
+        const finalScoreEl = document.getElementById('final-score');
+        const totalTimeEl = document.getElementById('total-time');
+        const feedbackContainer = document.getElementById('feedback-container');
+
+
+        // --- STATE ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let totalPossibleScore = 0;
+        let timerInterval;
+        let seconds = 0;
+
+        // --- FUNCTIONS ---
+
+        function createTiledWatermark() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const text = 'criticalcarebootcamp';
+            const fontSize = 18;
+            const padding = 100;
+            ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
+            const textMetrics = ctx.measureText(text);
+            const canvasWidth = textMetrics.width + padding;
+            const canvasHeight = fontSize * 3 + padding;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
+            ctx.fillStyle = 'rgba(180, 180, 180, 0.15)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.translate(canvasWidth / 2, canvasHeight / 2);
+            ctx.rotate(-25 * Math.PI / 180);
+            ctx.fillText(text, 0, 0);
+            const dataUrl = canvas.toDataURL('image/png');
+            const overlay = document.getElementById('watermark-overlay');
+            if (overlay) {
+                overlay.style.backgroundImage = `url(${dataUrl})`;
+                overlay.style.backgroundRepeat = 'repeat';
+            }
+        }
+
+        function calculateTotalScore() {
+            totalPossibleScore = caseData.reduce((total, q) => total + q.answer.reduce((qTotal, ans) => qTotal + ans.points, 0), 0);
+        }
+
+        function startTimer() {
+            seconds = 0;
+            timerInterval = setInterval(() => {
+                seconds++;
+                const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+                const secs = String(seconds % 60).padStart(2, '0');
+                timerEl.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function updateScoreDisplay() {
+            scoreEl.textContent = `${score} / ${totalPossibleScore}`;
+        }
+        
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / caseData.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function createQuestionCard(qData, index) {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 md:p-8 rounded-3xl shadow-sm mb-8';
+            card.id = `question-card-${index}`;
+            card.style.opacity = '0';
+            card.style.animation = 'fadeInUp 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards';
+            card.style.animationDelay = '150ms';
+            
+            let contentHTML = '';
+            if (qData.images && qData.images.length > 0) {
+                contentHTML = '<div class="my-6 grid grid-cols-1 gap-4">';
+                qData.images.forEach(img => {
+                    contentHTML += `
+                        <div class="border rounded-2xl bg-gray-50 p-2">
+                            <h5 class="font-semibold text-center text-gray-600 mb-2">${img.type}</h5>
+                            <div class="flex justify-center overflow-hidden">
+                                <img src="${img.url}" alt="${img.type} image" class="w-full h-auto object-contain max-h-96" onerror="this.onerror=null;this.src='https://placehold.co/600x400/f5f5f7/6e6e73?text=Image+Not+Found';">
+                            </div>
+                        </div>
+                    `;
+                });
+                contentHTML += '</div>';
+            } else if (qData.dataType === 'table') {
+                let tableRows = qData.data.rows.map(row => `
+                    <tr>
+                        <td>${row[0]}</td>
+                        <td>${row[1]}</td>
+                        <td>${row[2]}</td>
+                    </tr>
+                `).join('');
+                contentHTML = `
+                    <div class="my-6 overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>${qData.data.headers[0]}</th>
+                                    <th>${qData.data.headers[1]}</th>
+                                    <th>${qData.data.headers[2]}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+
+            let answerPointsHTML = qData.answer.map(ans => `
+                <div class="checkable-item flex items-start p-4 rounded-lg mb-2" data-points="${ans.points}">
+                    <svg class="check-icon h-7 w-7 mr-4 flex-shrink-0 mt-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div class="text-gray-700 flex-1">${ans.text}</div>
+                    <div class="ml-4 font-semibold text-blue-600 bg-blue-50 rounded-full px-3 py-1 text-sm">${ans.points} ${ans.points > 1 ? 'pts' : 'pt'}</div>
+                </div>
+            `).join('');
+            
+            let educationalHTML = '';
+            if (qData.educational) {
+                educationalHTML = `<div class="educational-point">${qData.educational}</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="flex items-start">
+                    <div class="bg-blue-500 text-white rounded-full flex-shrink-0 flex items-center justify-center h-10 w-10 text-lg font-bold mr-5 mt-1">${index + 1}</div>
+                    <div class="w-full">
+                        <div class="text-2xl font-bold mb-4 text-gray-800">${qData.question}</div>
+                        ${contentHTML}
+                        <textarea class="w-full p-4 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-lg" rows="4" placeholder="Formulate your answer..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button class="reveal-btn atelier-button atelier-button-secondary">Reveal Answer</button>
+                </div>
+                <div class="answer-reveal">
+                    <div class="space-y-2">${answerPointsHTML}</div>
+                    ${educationalHTML}
+                </div>
+                <div class="mt-6 text-center">
+                    <button class="next-btn atelier-button hidden">Next Question</button>
+                </div>
+            `;
+            
+            questionsContainer.appendChild(card);
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function attachEventListeners(index) {
+            const card = document.getElementById(`question-card-${index}`);
+            const revealBtn = card.querySelector('.reveal-btn');
+            const answerReveal = card.querySelector('.answer-reveal');
+            const nextBtn = card.querySelector('.next-btn');
+            
+            revealBtn.addEventListener('click', () => {
+                answerReveal.classList.add('show');
+                revealBtn.style.display = 'none';
+                nextBtn.classList.remove('hidden');
+            });
+
+            card.querySelectorAll('.checkable-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const points = parseInt(item.dataset.points);
+                    const isCorrect = item.classList.toggle('correct');
+                    score = isCorrect ? score + points : score - points;
+                    updateScoreDisplay();
+                });
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                card.classList.add('is-disabled');
+                currentQuestionIndex++;
+                updateProgressBar();
+                if (currentQuestionIndex < caseData.length) {
+                    showNextQuestion();
+                } else {
+                    setTimeout(showResults, 800);
+                }
+            });
+        }
+
+        function showNextQuestion() {
+            if (currentQuestionIndex < caseData.length) {
+                const qData = caseData[currentQuestionIndex];
+                createQuestionCard(qData, currentQuestionIndex);
+                attachEventListeners(currentQuestionIndex);
+            }
+        }
+
+        function showResults() {
+            mainContent.style.display = 'none';
+            resultsScreen.style.display = 'flex';
+            stopTimer();
+            finalScoreEl.textContent = `${score} / ${totalPossibleScore}`;
+            totalTimeEl.textContent = timerEl.textContent;
+
+            const percentage = totalPossibleScore > 0 ? Math.max(0, (score / totalPossibleScore) * 100) : 0;
+            let feedbackHTML = '';
+            let grade = '';
+            let gradeColor = '';
+            let debrief = '';
+
+            if (percentage >= 70) {
+                grade = 'Pass';
+                gradeColor = 'text-green-600';
+                debrief = `
+                    <p class="text-lg text-gray-700 mb-6"><strong>Overall:</strong> Excellent performance. You demonstrated a strong, systematic approach to a complex, evolving case of pneumonia and ARDS.</p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-lg text-gray-800">Areas of Strength:</h4>
+                            <ul class="list-disc list-inside text-gray-600 ml-4">
+                                <li><strong>Early Recognition & Resuscitation:</strong> You correctly identified septic shock and initiated the Hour-1 bundle appropriately.</li>
+                                <li><strong>Advanced ARDS Management:</strong> Your understanding of lung-protective ventilation, mechanical power, and adjuncts like proning was sound.</li>
+                                <li><strong>ECMO Emergencies:</strong> You correctly identified and managed the critical complication of oxygenator failure.</li>
+                                <li><strong>Complication Management:</strong> Your rapid identification and management of both tension pneumothorax and post-extubation stridor were excellent.</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            } else {
+                grade = 'Needs Improvement';
+                gradeColor = 'text-red-600';
+                debrief = `
+                    <p class="text-lg text-gray-700 mb-6"><strong>Overall:</strong> This was a challenging case designed to test multiple core competencies. This performance indicates key areas for review. Let's break down the learning opportunities.</p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-lg text-gray-800">1. Sepsis and Shock Management (Domain 3)</h4>
+                            <p class="text-gray-600 ml-4">The immediate, aggressive implementation of the Hour-1 Sepsis Bundle is critical. This includes rapid fluid administration, early vasopressors to maintain perfusion, and securing definitive access. Hesitation in any of these steps can worsen outcomes. <strong>Action:</strong> Memorize and practice the components of the Hour-1 bundle until they are automatic.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-lg text-gray-800">2. Advanced Respiratory Support (Domain 1)</h4>
+                            <p class="text-gray-600 ml-4">Managing ARDS requires strict adherence to lung-protective ventilation. Concepts like Driving Pressure and Mechanical Power are key to quantifying and minimizing VILI. <strong>Action:</strong> Review the ARDSNet protocols and the evidence for advanced adjuncts like proning and ECMO.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-lg text-gray-800">3. Recognizing Complications (Domain 4: Patient Safety)</h4>
+                            <p class="text-gray-600 ml-4">Ventilated patients are at high risk of complications. Recognizing tension pneumothorax is a clinical skill. Similarly, recognizing a BPF by the persistent air leak is crucial for adjusting ventilator strategy. <strong>Action:</strong> Mentally rehearse the "what-if" scenarios for a ventilated patient: "What if the BP drops suddenly? What if the SpO2 drops?"</p>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold text-lg text-gray-800">4. ECMO Management (Domain 1 & 4)</h4>
+                            <p class="text-gray-600 ml-4">ECMO is a high-risk therapy. Recognizing circuit emergencies like oxygenator failure (falling post-membrane PaO2, darkening blood) is a critical skill that requires immediate, coordinated action. <strong>Action:</strong> Review the common ECMO circuit complications and the initial steps in troubleshooting.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            feedbackHTML = `
+                <h3 class="text-3xl font-bold mb-4">Performance Debrief</h3>
+                <p class="text-2xl mb-6">Your Grade: <span class="font-bold ${gradeColor}">${grade} (${percentage.toFixed(0)}%)</span></p>
+                ${debrief}
+                <div class="mt-6 pt-4 border-t">
+                    <p class="text-gray-600">A score of <strong>70%</strong> or higher is considered a passing grade for this simulation. Review the educational points in each section to consolidate your learning.</p>
+                </div>
+            `;
+
+            feedbackContainer.innerHTML = feedbackHTML;
+        }
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            mainContent.style.display = 'grid'; 
+            resultsScreen.style.display = 'none';
+            
+            stopTimer(); 
+            currentQuestionIndex = 0;
+            score = 0;
+            
+            questionsContainer.innerHTML = '';
+            
+            calculateTotalScore();
+            updateScoreDisplay();
+            updateProgressBar();
+            startTimer();
+            showNextQuestion();
+        }
+
+        // --- INITIALIZATION ---
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        createTiledWatermark();
+        window.addEventListener('resize', createTiledWatermark);
+    });
+    </script>
+</body>
+</html>
+
